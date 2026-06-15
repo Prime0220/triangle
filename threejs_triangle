@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Three.js Rainbow Triangle</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        canvas { display: block; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <script>
+        // 1. 씬(Scene), 카메라(Camera), 렌더러(Renderer) 생성
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. 삼각형 정점 데이터(위치 및 색상) 정의
+        const geometry = new THREE.BufferGeometry();
+        
+        // 정점 위치 (X, Y, Z) - 시계 반대 방향
+        const vertices = new Float32Array([
+             0.0,  0.5, 0.0,  // 위 (빨강)
+            -0.5, -0.5, 0.0,  // 왼쪽 아래 (파랑)
+             0.5, -0.5, 0.0   // 오른쪽 아래 (초록)
+        ]);
+
+        // 정점 색상 (R, G, B)
+        const colors = new Float32Array([
+            1.0, 0.0, 0.0,  // 빨강
+            0.0, 0.0, 1.0,  // 파랑
+            0.0, 1.0, 0.0   // 초록
+        ]);
+
+        // 버퍼 인덱스 바인딩 (DirectX 12의 Vertex Buffer View 역할)
+        geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // 3. 재질(Material) 정의 (정점 색상을 사용하도록 vertexColors 활성화)
+        const material = new THREE.MeshBasicMaterial({ 
+            vertexColors: true, 
+            side: THREE.DoubleSide 
+        });
+
+        // 4. 메쉬 생성 및 씬에 추가
+        const triangle = new THREE.Mesh(geometry, material);
+        scene.add(triangle);
+
+        // 카메라를 뒤로 조금 빼서 삼각형이 보이도록 설정
+        camera.position.z = 1.5;
+
+        // 5. 애니메이션 렌더 루프 (기존 Win32의 PeekMessage 루프 역할)
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Z축 기준으로 회전 (매 프레임마다 각도 변경)
+            triangle.rotation.z += 0.02;
+
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+
+        // 윈도우 크기가 바뀔 때 대응 (반응형 화면)
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
