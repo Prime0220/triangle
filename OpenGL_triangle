@@ -1,0 +1,92 @@
+#include <windows.h>
+#include <gl/GL.h>
+
+// 안전하게 라이브러리 링크를 명시합니다.
+#pragma comment(lib, "opengl32.lib")
+#pragma comment(lib, "user32.lib")
+#pragma comment(lib, "gdi32.lib")
+
+float r = 0;
+
+// 1. OpenGL 초기화
+void InitGL(HWND hwnd, HDC hdc) {
+    PIXELFORMATDESCRIPTOR p = {
+        sizeof(p),
+        1,
+        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+        PFD_TYPE_RGBA, // NULL 대신 명시적 지정
+        32
+    };
+
+    int pixelFormat = ChoosePixelFormat(hdc, &p);
+    SetPixelFormat(hdc, pixelFormat, &p);
+    HGLRC hglrc = wglCreateContext(hdc);
+    wglMakeCurrent(hdc, hglrc);
+}
+
+// 2. 그리기 루틴
+void Draw() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+    glRotatef(r += 0.5f, 0, 0, 1);
+
+    glBegin(GL_TRIANGLES);
+    glColor3f(1, 0, 0); glVertex2f(0, 0.5f);   // 빨강
+    glColor3f(0, 1, 0); glVertex2f(0.5f, -0.5f); // 초록
+    glColor3f(0, 0, 1); glVertex2f(-0.5f, -0.5f);// 파랑
+    glEnd();
+}
+
+// 3. 메시지 처리
+LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
+    switch (m) {
+    case WM_CLOSE:
+        PostQuitMessage(0);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    }
+    return DefWindowProc(h, m, w, l);
+}
+
+// main 함수 대신 WinMain을 사용하거나, 콘솔 프로젝트 호환성을 위해 유지합니다.
+int main() {
+    HINSTANCE hI = GetModuleHandle(NULL);
+
+    // WNDCLASS 설정을 조금 더 안전하게 보완
+    WNDCLASS wc = { 0 };
+    wc.lpfnWndProc = WndProc;
+    wc.hInstance = hI;
+    wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    wc.lpszClassName = TEXT("GL_WINDOW"); // TEXT 매크로 사용
+
+    if (!RegisterClass(&wc)) return 0;
+
+    // 창 생성 (TEXT 매크로 사용)
+    HWND hwnd = CreateWindow(
+        TEXT("GL_WINDOW"), TEXT("OpenGL Rainbow Triangle"),
+        WS_VISIBLE | WS_OVERLAPPEDWINDOW,
+        100, 100, 500, 500,
+        NULL, NULL, hI, NULL
+    );
+
+    HDC hdc = GetDC(hwnd);
+    InitGL(hwnd, hdc);
+
+    MSG msg;
+    while (1) {
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        else {
+            Draw();
+            SwapBuffers(hdc);
+            Sleep(1); // CPU 점유율 과다 방지 (선택 사항)
+        }
+    }
+
+    return (int)msg.wParam;
+}
